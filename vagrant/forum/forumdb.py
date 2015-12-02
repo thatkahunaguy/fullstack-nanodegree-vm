@@ -4,6 +4,8 @@
 
 import time
 import psycopg2
+# bleach is an input sanitization library by Mozilla
+import bleach
 
 
 ## Get posts from database.
@@ -20,7 +22,8 @@ def GetAllPosts():
     ## Cursor creation
     curs = DB.cursor()
     curs.execute("SELECT content, time FROM posts ORDER BY time DESC")
-    posts = [{'content': str(row[0]), 'time': str(row[1])} for row in curs.fetchall()]
+    # added output sanitization to content since we already have bad data in dbase
+    posts = [{'content': str(bleach.clean(row[0])), 'time': str(row[1])} for row in curs.fetchall()]
     DB.close()
     return posts
     
@@ -36,6 +39,8 @@ def AddPost(content):
     DB = psycopg2.connect("dbname = forum")
     ## Cursor creation
     curs = DB.cursor()
+    # input sanitization
+    content = bleach.clean(content)
     ## Very important, values must be passed as a tuple & single item tuple needs comma
     ## Use DB API parameter passing rather than string substitution for security
     curs.execute("INSERT INTO posts (content) VALUES (%s)", (content,))
