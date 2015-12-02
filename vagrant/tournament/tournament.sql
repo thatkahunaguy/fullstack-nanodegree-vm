@@ -30,3 +30,7 @@ CREATE TABLE matches (
 -- CREATE TABLE tournaments (
 --     tournament_id serial PRIMARY KEY, 
 --     tournament_name text);
+--
+-- CREATE TABLE tournament_registrations (
+--     tournament_id integer REFERENCES tournaments, 
+--     player_id integer REFERENCES players);
