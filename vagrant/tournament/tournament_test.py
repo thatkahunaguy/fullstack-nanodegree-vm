@@ -3,6 +3,7 @@
 # Test cases for tournament.py
 
 from tournament import *
+from populate import populate
 
 def testDeleteMatches():
     deleteMatches()
@@ -16,6 +17,15 @@ def testDelete():
 
 
 def testCount():
+# added a test of actual count = 2 players via populate.py
+    populate();
+    c = countPlayers()
+    if c == '2':
+        raise TypeError(
+            "countPlayers() should return numeric two, not string '2'.")
+    if c != 2:
+        raise ValueError("Initially, countPlayers should return two.")
+    print "3a. Initially, countPlayers() returns two."
     deleteMatches()
     deletePlayers()
     c = countPlayers()
@@ -24,7 +34,7 @@ def testCount():
             "countPlayers() should return numeric zero, not string '0'.")
     if c != 0:
         raise ValueError("After deleting, countPlayers should return zero.")
-    print "3. After deleting, countPlayers() returns zero."
+    print "3b. After deleting, countPlayers() returns zero."
 
 
 def testRegister():
@@ -128,7 +138,7 @@ def testPairings():
 if __name__ == '__main__':
     testDeleteMatches()
     testDelete()
-#     testCount()
+    testCount()
 #     testRegister()
 #     testRegisterCountDelete()
 #     testStandingsBeforeMatches()
