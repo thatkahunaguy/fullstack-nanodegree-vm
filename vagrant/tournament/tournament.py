@@ -4,6 +4,8 @@
 #
 
 import psycopg2
+# bleach is an input sanitization library by Mozilla
+import bleach
 
 
 def connect():
@@ -82,9 +84,15 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
+    # sanitize name input - would this generally be done in these functions or
+    # in the functions handling user input?  ie wouldn't I generally design
+    # the program so that I santize input in the handler which acquires it from
+    # the user rather than in each individual function I might pass input attributes
+    # to?
+    name = bleach.clean(name)
     conn = connect()
     c = conn.cursor()
-    c.execute("INSERT INTO players (player_name) values ('{}');".format(name))
+    c.execute("INSERT INTO players (player_name) values (%s);",(name,))
     conn.commit() 
     conn.close()
     
@@ -127,7 +135,14 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
- 
+    conn = connect()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO matches (player1_id, player2_id, winner_id )
+            values (%s, %s, %s);''',(winner, loser, winner))
+    conn.commit() 
+    conn.close()
+    
  
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
