@@ -1,6 +1,8 @@
 DROP VIEW IF EXISTS win_record;
 DROP VIEW IF EXISTS loss_record;
 DROP VIEW IF EXISTS matches_played;
+DROP VIEW IF EXISTS match_record;
+
 
 CREATE VIEW win_record AS
 SELECT players.player_id AS player, players.player_name, count(matches.winner_id) AS wins
@@ -23,10 +25,19 @@ FROM players LEFT JOIN matches
        (players.player_id = matches.player2_id)
 GROUP BY player;
 
+CREATE VIEW match_record AS
+    SELECT win_record.player, win_record.player_name, win_record.wins as wins,  
+           matches_played.matches
+    FROM win_record 
+        JOIN loss_record ON win_record.player = loss_record.player
+        JOIN matches_played ON win_record.player = matches_played.player
+    ORDER BY wins DESC;
+    
 -- verify views work
 select * from win_record;
 select * from loss_record;
 select * from matches_played;
+select * from match_record;
 
 
 -- action: set up office hours to discuss when a select column must be 

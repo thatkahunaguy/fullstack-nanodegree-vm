@@ -44,6 +44,7 @@ CREATE VIEW win_record AS
         ON players.player_id = matches.winner_id
     GROUP BY player;
 
+-- technically not needed by the program as defined
 CREATE VIEW loss_record AS
     SELECT players.player_id AS player, count(matches.winner_id) AS losses
     FROM players LEFT JOIN matches
@@ -58,3 +59,11 @@ CREATE VIEW matches_played AS
         ON (players.player_id = matches.player1_id) OR
            (players.player_id = matches.player2_id)
     GROUP BY player;
+
+CREATE VIEW match_record AS
+    SELECT win_record.player, win_record.player_name, win_record.wins as wins,  
+           matches_played.matches
+    FROM win_record 
+        JOIN loss_record ON win_record.player = loss_record.player
+        JOIN matches_played ON win_record.player = matches_played.player
+    ORDER BY wins DESC;

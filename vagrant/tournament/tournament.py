@@ -117,13 +117,7 @@ def playerStandings():
     # create_views()  - dropped since I added to initial sql file
     # action: set up office hours to discuss when a select column must be 
     # aggregated or GROUP BY
-    c.execute('''
-        SELECT win_record.player, win_record.player_name, win_record.wins as wins,  
-               matches_played.matches
-        FROM win_record 
-            JOIN loss_record ON win_record.player = loss_record.player
-            JOIN matches_played ON win_record.player = matches_played.player
-        ORDER BY wins DESC;''')
+    c.execute("SELECT * FROM match_record;")
     standings = c.fetchall(); 
     conn.close()
     return standings
@@ -159,5 +153,15 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+    conn = connect()
+    c = conn.cursor()
+    c.execute("SELECT count(player_id) FROM players;")
+    players = c.fetchone()[0]
+    
+    #assumes an even number of players
+#    for i in players:
+        
+     
+    conn.close()
 
 
