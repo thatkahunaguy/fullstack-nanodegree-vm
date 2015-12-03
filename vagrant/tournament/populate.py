@@ -18,8 +18,8 @@ def populate():
     # get the id of the first player added so matches can be populated
     c.execute("SELECT player_id FROM players WHERE player_name = 'Joe Blow';")
     id = c.fetchone()
-    c.execute("INSERT INTO matches (player1_id, player2_id, round) values (%s,%s,1);",
-             (id[0],id[0]+1))
+    c.execute('''INSERT INTO matches (player1_id, player2_id, round, winner_id)
+             values (%s, %s, 1, %s);''',(id[0], id[0]+1, id[0]))
     conn.commit() 
     conn.close()
     

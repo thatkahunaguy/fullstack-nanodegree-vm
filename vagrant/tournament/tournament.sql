@@ -34,3 +34,27 @@ CREATE TABLE matches (
 -- CREATE TABLE tournament_registrations (
 --     tournament_id integer REFERENCES tournaments, 
 --     player_id integer REFERENCES players);
+
+
+-- Create views for win_record, loss_record, & matches played
+-- action: investigate whether this can be refactored into fewer views
+CREATE VIEW win_record AS
+    SELECT players.player_id AS player, players.player_name, count(matches.winner_id) AS wins
+    FROM players LEFT JOIN matches
+        ON players.player_id = matches.winner_id
+    GROUP BY player;
+
+CREATE VIEW loss_record AS
+    SELECT players.player_id AS player, count(matches.winner_id) AS losses
+    FROM players LEFT JOIN matches
+        ON (players.player_id != matches.winner_id) AND
+           ((players.player_id = matches.player1_id) OR
+           (players.player_id = matches.player2_id))
+    GROUP BY player;
+
+CREATE VIEW matches_played AS
+    SELECT players.player_id AS player, count(matches.match_id) AS matches
+    FROM players LEFT JOIN matches
+        ON (players.player_id = matches.player1_id) OR
+           (players.player_id = matches.player2_id)
+    GROUP BY player;
