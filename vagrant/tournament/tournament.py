@@ -15,7 +15,7 @@ def connect():
 # decided to do this in the initial tournament.sql database setup instead
 # need to understand better pros/cons of doing it in initialization vs
 # python code - within these functions doesn't seem the best place?
-# def create_views():
+# def createViews():
 #     """Create views for the win & loss record and matches played."""
 #     # action: office hours to figure out if I should do this in Python
 #     # or upon database setup since with the current function setup the
@@ -114,7 +114,7 @@ def playerStandings():
     conn = connect()
     c = conn.cursor()
     # create views of win_record, loss_record, & matches_played
-    # create_views()  - dropped since I added to initial sql file
+    # createViews()  - dropped since I added to initial sql file
     # action: set up office hours to discuss when a select column must be 
     # aggregated or GROUP BY
     c.execute("SELECT * FROM match_record;")
@@ -153,14 +153,18 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+    pairs = []
     conn = connect()
     c = conn.cursor()
-    c.execute("SELECT count(player_id) FROM players;")
-    players = c.fetchone()[0]
-    
-    #assumes an even number of players
-#    for i in players:
-        
+#     c.execute("SELECT count(player_id) FROM players;")
+#     players = c.fetchone()[0]
+    standings = playerStandings()
+    # assumes an even number of players
+    for i in range(0, len(standings) - 1, 2):
+    # use append since the list is empty & you can't write to an empty element
+        pairs.append((standings[i][0], standings[i][1],
+                    standings[i+1][0], standings[i+1][1]))
+    return pairs
      
     conn.close()
 
