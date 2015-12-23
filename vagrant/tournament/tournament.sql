@@ -22,7 +22,8 @@ CREATE TABLE matches (
      match_id serial PRIMARY KEY,
      round integer,
      winner_id integer REFERENCES players(player_id), 
-     loser_id integer REFERENCES players(player_id));
+     loser_id integer REFERENCES players(player_id),
+     tie boolean);
 --     tournament_id integer REFERENCES tournaments,
 --     tie integer ???
 
@@ -61,6 +62,14 @@ CREATE VIEW matches_played AS
         ON (players.player_id = matches.winner_id) OR
            (players.player_id = matches.loser_id)
     GROUP BY player;
+
+-- WORKING ON TIES - just added a boolean but is this the best method?    
+-- CREATE VIEW ties AS
+--     SELECT players.player_id AS player, count(matches.match_id) AS matches
+--     FROM players LEFT JOIN matches
+--         ON (players.player_id = matches.winner_id) OR
+--            (players.player_id = matches.loser_id)
+--     GROUP BY player;
 
 CREATE VIEW match_record AS
     SELECT win_record.player, win_record.player_name, win_record.wins as wins,  
