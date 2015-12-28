@@ -12,15 +12,6 @@ def connect():
     """Connect to the PostgreSQL database.  Returns a database connection."""
     return psycopg2.connect("dbname=tournament")
 
-# this will generically delete a table name passed to the function
-# kept deleteMatches & deletePlayers in case grading script needs these
-def deleteTable(table):
-    """Remove all the table records from the database."""
-    conn = connect()
-    c = conn.cursor()
-    c.execute("DELETE FROM (%s);",(table,))
-    conn.commit() 
-    conn.close()
 
 def deleteMatches():
     """Remove all the match records from the database."""
@@ -195,8 +186,6 @@ def swissPairings():
     pairs = []
     conn = connect()
     c = conn.cursor()
-#     c.execute("SELECT count(player_id) FROM players;")
-#     players = c.fetchone()[0]
     standings = playerStandings()
     # assumes an even number of players
     for i in range(0, len(standings) - 1, 2):

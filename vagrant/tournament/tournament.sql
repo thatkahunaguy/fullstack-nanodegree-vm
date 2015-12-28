@@ -42,22 +42,6 @@ CREATE TABLE matches (
      match_result outcome);   
 
 
--- might need to change this if we don't want to count defaults & byes as matches
--- this table shows standings only for players who have reported matches.  It needs
--- to be joined to the registered tournament players table so players who haven't 
--- completed a match are shown.  
--- action: do I need to group by tournament or add some other tournament element
--- CREATE VIEW standings AS
---     SELECT
---         player_id,
---         count(case when match_result = 'win' then 1 else NULL end) as wins,
---         count(case when match_result = 'loss' then 1 else NULL end) as losses,
---         count(case when match_result = 'tie' then 1 else NULL end) as ties,
---         count(match_result) as matches_played
---     FROM match_participants
---     GROUP BY player_id
---     ORDER BY wins DESC;
-
 -- this is the specific view requested by the assignment, wins only
 CREATE VIEW standings AS
     SELECT
@@ -83,9 +67,5 @@ CREATE VIEW match_record AS
     GROUP BY player
     ORDER BY wins DESC;
 
--- CREATE VIEW match_record AS
---     SELECT players.player_id, standings.wins as wins, standings.losses as losses,
---         standings.ties as ties, standings.matches_played as matches
---     FROM players LEFT JOIN standings
---     ON
+
         
