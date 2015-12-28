@@ -11,46 +11,22 @@ import bleach
 def connect():
     """Connect to the PostgreSQL database.  Returns a database connection."""
     return psycopg2.connect("dbname=tournament")
-    
-# decided to do this in the initial tournament.sql database setup instead
-# need to understand better pros/cons of doing it in initialization vs
-# python code - within these functions doesn't seem the best place?
-# def createViews():
-#     """Create views for the win & loss record and matches played."""
-#     # action: office hours to figure out if I should do this in Python
-#     # or upon database setup since with the current function setup the
-#     # program will try to recreate the views every time functions are called
-#     conn = connect()
-#     c = conn.cursor()
-#     c.execute('''
-#     CREATE VIEW win_record AS
-#     SELECT players.player_id AS player, players.player_name, count(matches.winner_id) AS wins
-#     FROM players LEFT JOIN matches
-#         ON players.player_id = matches.winner_id
-#     GROUP BY player;''')
-#     c.execute('''
-#     CREATE VIEW loss_record AS
-#     SELECT players.player_id AS player, count(matches.winner_id) AS losses
-#     FROM players LEFT JOIN matches
-#         ON (players.player_id != matches.winner_id) AND
-#            ((players.player_id = matches.player1_id) OR
-#            (players.player_id = matches.player2_id))
-#     GROUP BY player;''')
-#     c.execute('''
-#     CREATE VIEW matches_played AS
-#     SELECT players.player_id AS player, count(matches.match_id) AS matches
-#     FROM players LEFT JOIN matches
-#         ON (players.player_id = matches.player1_id) OR
-#            (players.player_id = matches.player2_id)
-#     GROUP BY player;''')
-#     conn.commit() 
-#     conn.close()
 
+# this will generically delete a table name passed to the function
+# kept deleteMatches & deletePlayers in case grading script needs these
+def deleteTable(table):
+    """Remove all the table records from the database."""
+    conn = connect()
+    c = conn.cursor()
+    c.execute("DELETE FROM (%s);",(table,))
+    conn.commit() 
+    conn.close()
 
 def deleteMatches():
     """Remove all the match records from the database."""
     conn = connect()
     c = conn.cursor()
+    c.execute("DELETE FROM match_participants;")
     c.execute("DELETE FROM matches;")
     conn.commit() 
     conn.close()
@@ -60,6 +36,7 @@ def deletePlayers():
     """Remove all the player records from the database."""
     conn = connect()
     c = conn.cursor()
+    c.execute("DELETE FROM tournament_registrations;")
     c.execute("DELETE FROM players;")
     conn.commit() 
     conn.close()
@@ -95,7 +72,45 @@ def registerPlayer(name):
     c.execute("INSERT INTO players (player_name) values (%s);",(name,))
     conn.commit() 
     conn.close()
+
+def createTournament(name):
+    """Adds a tournament to the tournament database.
+  
+    The database assigns a unique serial id number for the tournament.  
+  
+    Args:
+      name: the tournament's name (need not be unique).
+      
+    Returns: the tournament's unique id for immediate use registering players etc.
+    """
+    # sanitize name input - would this generally be done in these functions or
+    # in the functions handling user input?  ie wouldn't I generally design
+    # the program so that I santize input in the handler which acquires it from
+    # the user rather than in each individual function I might pass input attributes
+    # to?
+    name = bleach.clean(name)
+    conn = connect()
+    c = conn.cursor()
+    c.execute('''INSERT INTO tournaments (tournament_name) values (%s)
+        RETURNING tournament_id;''',(name,))
+    tournament = c.fetchone()[0]
+    conn.commit() 
+    conn.close()
+    return(tournament)
     
+def registerTournamentPlayer(tournament_id, player_id):
+    """Adds a player to a specific tournament's registration
+  
+    Args:
+      player_id: the player's unique player_id from the players table
+    """
+    conn = connect()
+    c = conn.cursor()
+    c.execute('''INSERT INTO tournament_registrations (tournament_id, player_id)
+        values (%s, %s);''',(tournament_id, player_id,))
+    conn.commit() 
+    conn.close()
+
 
 def playerStandings():
     """Returns a list of the players and their win records, sorted by wins.
@@ -113,30 +128,54 @@ def playerStandings():
     standings = ()
     conn = connect()
     c = conn.cursor()
-    # create views of win_record, loss_record, & matches_played
-    # createViews()  - dropped since I added to initial sql file
-    # action: set up office hours to discuss when a select column must be 
-    # aggregated or GROUP BY
-    c.execute("SELECT * FROM match_record;")
+    # use the standings view - think about whether I need to do a select based
+    # on the specific tournament 
+    c.execute("SELECT * FROM standings;")
     standings = c.fetchall(); 
     conn.close()
     return standings
 
-def reportMatch(winner, loser):
+def reportMatch(tournament_id, winner, loser, tie=False):
     """Records the outcome of a single match between two players.
 
     Args:
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
+      tie(opt): boolean set to true if the match was a tie
+      
+    Note: I decided to make a separate function to handle events
+          like byes, defaults etc so the reportMatch function structure
+          could stay the same and have minimal impact on test scripts etc
     """
     conn = connect()
     c = conn.cursor()
+    # create a match and return the autogenerated matchid for use
+    # populating match_participants
     c.execute('''
-        INSERT INTO matches (winner_id, loser_id )
-            values (%s, %s);''',(winner, loser))
+        INSERT INTO matches (tournament_id) values (%s)
+             RETURNING match_id;''',(tournament_id,))
+    match = c.fetchone()[0]
+    # populate match_partipants with correct outcomes
+    if tie:
+        outcome1 = outcome2 = "tie" 
+    else:
+        outcome1 = "win"
+        outcome2 = "loss"
+    c.execute('''
+        INSERT INTO match_participants (match_id, player_id, match_result )
+            values (%s, %s, %s);''',(match, winner, outcome1))
+    c.execute('''
+        INSERT INTO match_participants (match_id, player_id, match_result )
+            values (%s, %s, %s);''',(match, loser, outcome2))
     conn.commit() 
     conn.close()
-    
+
+# for computing opponent match wins(omw) later
+# get matches played: select match_id from match_participants where player_id=1;
+# get opponents played: select player_id from match_participants where player_id<>1
+# AND match_id=1;
+# get omw: select wins from standings where player_id=2;
+  
  
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.

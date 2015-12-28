@@ -92,14 +92,24 @@ def testStandingsBeforeMatches():
 def testReportMatches():
     deleteMatches()
     deletePlayers()
+    # MODIFIED TO CREATE A TOURNAMENT
+    tournament = createTournament("US Open")
+    # END MOD
     registerPlayer("Bruno Walton")
     registerPlayer("Boots O'Neal")
     registerPlayer("Cathy Burton")
     registerPlayer("Diane Grant")
     standings = playerStandings()
     [id1, id2, id3, id4] = [row[0] for row in standings]
-    reportMatch(id1, id2)
-    reportMatch(id3, id4)
+    # MODIFIED TO REGISTER PLAYERS TO THE TOURNAMENT
+    registerTournamentPlayer(tournament, id1)
+    registerTournamentPlayer(tournament, id2)
+    registerTournamentPlayer(tournament, id3)
+    registerTournamentPlayer(tournament, id4)
+    # MODIFIED TO ADD TOURNAMENT TO reportMatch    
+    reportMatch(tournament, id1, id2)
+    reportMatch(tournament, id3, id4)
+    # END MOD
     standings = playerStandings()
     for (i, n, w, m) in standings:
         if m != 1:
@@ -114,14 +124,24 @@ def testReportMatches():
 def testPairings():
     deleteMatches()
     deletePlayers()
+    # MODIFIED TO CREATE A TOURNAMENT
+    tournament = createTournament("US Open")
+    # END MOD
     registerPlayer("Twilight Sparkle")
     registerPlayer("Fluttershy")
     registerPlayer("Applejack")
     registerPlayer("Pinkie Pie")
     standings = playerStandings()
     [id1, id2, id3, id4] = [row[0] for row in standings]
-    reportMatch(id1, id2)
-    reportMatch(id3, id4)
+    # MODIFIED TO REGISTER PLAYERS TO THE TOURNAMENT
+    registerTournamentPlayer(tournament, id1)
+    registerTournamentPlayer(tournament, id2)
+    registerTournamentPlayer(tournament, id3)
+    registerTournamentPlayer(tournament, id4)
+    # MODIFIED TO ADD TOURNAMENT TO reportMatch    
+    reportMatch(tournament, id1, id2)
+    reportMatch(tournament, id3, id4)
+    # END MOD
     pairings = swissPairings()
     if len(pairings) != 2:
         raise ValueError(
