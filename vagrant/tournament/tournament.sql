@@ -14,7 +14,7 @@ CREATE DATABASE tournament;
 \c tournament;
 
 -- create an enumerated type for the match outcomes
-CREATE TYPE outcome AS ENUM ('win', 'loss', 'tie', 'bye', 'default');
+CREATE TYPE outcome AS ENUM ('win', 'loss', 'tie', 'bye');
 
 CREATE TABLE players (
     player_id serial PRIMARY KEY, 
@@ -36,34 +36,42 @@ CREATE TABLE matches (
  
 -- probably need to update player_id to reference tournament registrations
 -- to validate it is a registered player (how to access correct tournament?)
- CREATE TABLE match_participants (
+ CREATE TABLE match_results (
      match_id integer REFERENCES matches,
      player_id integer REFERENCES players,
      match_result outcome);   
 
 
 -- this is the specific view requested by the assignment, wins only
+-- (may need matches played to delete byes & defaults)
 CREATE VIEW standings AS
     SELECT
+        matches.tournament_id as tournament_id,
         players.player_id as player,
-        players.player_name,
-        count(case when match_participants.match_result = 'win' then 1 else NULL end) as wins,
-        count(match_participants.match_result) as matches_played
-    FROM players LEFT JOIN match_participants
-    ON players.player_id = match_participants.player_id
-    GROUP BY player
+        players.player_name as player_name,
+        count(case when match_results.match_result = 'win' then 1 else NULL end) as wins,
+        count(case when match_results.match_result != 'bye' then 1 else NULL end) 
+            as matches_played
+    FROM players 
+        LEFT JOIN match_results
+            ON players.player_id = match_results.player_id
+        LEFT JOIN matches
+            ON match_results.match_id = matches.match_id
+    GROUP BY tournament_id, player
     ORDER BY wins DESC;
 
--- this view includes losses and ties
+-- this view includes losses and ties (may need matches played to delete byes & defaults)
 CREATE VIEW match_record AS
     SELECT
         players.player_id as player,
-        count(case when match_participants.match_result = 'win' then 1 else NULL end) as wins,
-        count(case when match_participants.match_result = 'loss' then 1 else NULL end) as losses,
-        count(case when match_participants.match_result = 'tie' then 1 else NULL end) as ties,
-        count(match_participants.match_result) as matches_played
-    FROM players LEFT JOIN match_participants
-    ON players.player_id = match_participants.player_id
+        count(case when match_results.match_result = 'win' then 1 else NULL end) as wins,
+        count(case when match_results.match_result = 'loss' then 1 else NULL end) as losses,
+        count(case when match_results.match_result = 'tie' then 1 else NULL end) as ties,
+        count(case when match_results.match_result = 'bye' then 1 else NULL end) as byes,
+        count(case when match_results.match_result != 'bye' then 1 else NULL end) 
+            as matches_played
+    FROM players LEFT JOIN match_results
+    ON players.player_id = match_results.player_id
     GROUP BY player
     ORDER BY wins DESC;
 

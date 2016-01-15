@@ -33,9 +33,9 @@ def populate():
     c.execute("SELECT match_id FROM matches WHERE tournament_id = %s;",(tourney[0],))
     match = c.fetchone()
     # register the match winner and loser
-    c.execute('''INSERT INTO match_participants (match_id, player_id, match_result)
+    c.execute('''INSERT INTO match_results (match_id, player_id, match_result)
              values (%s, %s, %s);''',(match[0], id[0], 'win'))
-    c.execute('''INSERT INTO match_participants (match_id, player_id, match_result)
+    c.execute('''INSERT INTO match_results (match_id, player_id, match_result)
              values (%s, %s, %s);''',(match[0], id[0]+1, 'loss'))
     conn.commit() 
     conn.close()

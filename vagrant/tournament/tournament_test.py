@@ -71,6 +71,7 @@ def testStandingsBeforeMatches():
     deletePlayers()
     registerPlayer("Melpomene Murray")
     registerPlayer("Randy Schwartz")
+    # prior to registering for tournaments standings must be for all tournaments
     standings = playerStandings()
     if len(standings) < 2:
         raise ValueError("Players should appear in playerStandings even before "
@@ -99,6 +100,7 @@ def testReportMatches():
     registerPlayer("Boots O'Neal")
     registerPlayer("Cathy Burton")
     registerPlayer("Diane Grant")
+    # prior to registering for tournaments standings must be for all tournaments
     standings = playerStandings()
     [id1, id2, id3, id4] = [row[0] for row in standings]
     # MODIFIED TO REGISTER PLAYERS TO THE TOURNAMENT
@@ -110,7 +112,7 @@ def testReportMatches():
     reportMatch(tournament, id1, id2)
     reportMatch(tournament, id3, id4)
     # END MOD
-    standings = playerStandings()
+    standings = playerStandings(tournament)
     for (i, n, w, m) in standings:
         if m != 1:
             raise ValueError("Each player should have one match recorded.")
@@ -131,6 +133,7 @@ def testPairings():
     registerPlayer("Fluttershy")
     registerPlayer("Applejack")
     registerPlayer("Pinkie Pie")
+    # prior to registering for tournaments standings must be for all tournaments
     standings = playerStandings()
     [id1, id2, id3, id4] = [row[0] for row in standings]
     # MODIFIED TO REGISTER PLAYERS TO THE TOURNAMENT
@@ -142,7 +145,7 @@ def testPairings():
     reportMatch(tournament, id1, id2)
     reportMatch(tournament, id3, id4)
     # END MOD
-    pairings = swissPairings()
+    pairings = swissPairings(tournament)
     if len(pairings) != 2:
         raise ValueError(
             "For four players, swissPairings should return two pairs.")
@@ -154,6 +157,48 @@ def testPairings():
             "After one match, players with one win should be paired.")
     print "8. After one match, players with one win are paired."
 
+def testOddPlayers():
+    deleteMatches()
+    deletePlayers()
+    # MODIFIED TO CREATE A TOURNAMENT
+    tournament = createTournament("US Open")
+    # END MOD
+    registerPlayer("Bruno Walton")
+    registerPlayer("Boots O'Neal")
+    registerPlayer("Cathy Burton")
+    registerPlayer("Diane Grant")
+    registerPlayer("Joe Blow")
+    # prior to registering for tournaments standings must be for all tournaments
+    standings = playerStandings()
+    [id1, id2, id3, id4, id5] = [row[0] for row in standings]
+    # MODIFIED TO REGISTER PLAYERS TO THE TOURNAMENT
+    registerTournamentPlayer(tournament, id1)
+    registerTournamentPlayer(tournament, id2)
+    registerTournamentPlayer(tournament, id3)
+    registerTournamentPlayer(tournament, id4)
+    registerTournamentPlayer(tournament, id5)
+    # MODIFIED TO ADD TOURNAMENT TO reportMatch
+    pairings = swissPairings(tournament)
+    [(pid1, pname1, pid2, pname2), (pid3, pname3, pid4, pname4)] = pairings    
+    reportMatch(tournament, pid1, pid2)
+    reportMatch(tournament, pid3, pid4)
+    pairings = swissPairings(tournament)
+    [(pid1, pname1, pid2, pname2), (pid3, pname3, pid4, pname4)] = pairings    
+    reportMatch(tournament, pid1, pid2)
+    reportMatch(tournament, pid3, pid4)
+    pairings = swissPairings(tournament)
+    [(pid1, pname1, pid2, pname2), (pid3, pname3, pid4, pname4)] = pairings    
+    reportMatch(tournament, pid1, pid2)
+    reportMatch(tournament, pid3, pid4)
+    # END MOD
+    standings = playerStandings(tournament)
+    for (i, n, w, m) in standings:
+        if i in (pid1,) and (w != 3 and m != 3):
+            raise ValueError("The top player should have 3 wins & matches recorded.")
+        elif i in (pid3, pid4) and m != 2:
+            raise ValueError("The lowest 2 players should have had byes")
+    print "9. With an odd # of players 3 get byes & others have updated standings."
+
 
 if __name__ == '__main__':
     testDeleteMatches()
@@ -164,6 +209,7 @@ if __name__ == '__main__':
     testStandingsBeforeMatches()
     testReportMatches()
     testPairings()
+    testOddPlayers()
     print "Success!  All tests pass!"
 
 
