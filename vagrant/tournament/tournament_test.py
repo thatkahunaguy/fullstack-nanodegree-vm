@@ -187,16 +187,21 @@ def testOddPlayers():
     reportMatch(tournament, pid1, pid2)
     reportMatch(tournament, pid3, pid4)
     pairings = swissPairings(tournament)
-    [(pid1, pname1, pid2, pname2), (pid3, pname3, pid4, pname4)] = pairings    
+    [(pid1, pname1, pid2, pnam2), (pid3, pname3, pid4, pname4)] = pairings    
     reportMatch(tournament, pid1, pid2)
     reportMatch(tournament, pid3, pid4)
     # END MOD
     standings = playerStandings(tournament)
+    [id1, id2, id3, id4, id5] = [row[0] for row in standings]
     for (i, n, w, m) in standings:
-        if i in (pid1,) and (w != 3 and m != 3):
+        if i in (id1,) and (w != 3 and m != 3):
             raise ValueError("The top player should have 3 wins & matches recorded.")
-        elif i in (pid3, pid4) and m != 2:
-            raise ValueError("The lowest 2 players should have had byes")
+        elif i in (id2,) and w != 2 and m != 3:
+            raise ValueError("The third player should have had a bye & a win")
+        elif i in (id3,) and w != 1 and m != 2:
+            raise ValueError("The third player should have had a bye & a win")
+        elif i in (id4, id5) and w != 0 and m != 2:
+            raise ValueError("The lowest 2 players should have had byes & 0 wins")
     print "9. With an odd # of players 3 get byes & others have updated standings."
 
 

@@ -183,6 +183,12 @@ def whoHadABye(tournament):
     Returns:
       A list of ids who have had byes:
         id: the player's unique id (assigned by the database)
+        
+    Byes in this program show a bye outcome rather
+    than simply a "free win" as mentioned in extra credit.
+    This allows functionality to identify byes vs. true
+    wins if needed.  Byes are not currently counted as 
+    wins for standings or as matches played.
     """
     byes = ()
     conn = connect()
