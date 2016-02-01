@@ -123,8 +123,6 @@ def playerStandings(tournament = 0):
     standings = ()
     conn = connect()
     c = conn.cursor()
-    # use the standings view - think about whether I need to do a select based
-    # on the specific tournament ACTION REQUIRED
     if tournament:
         c.execute('''SELECT player, player_name, wins, matches_played FROM standings 
             WHERE tournament_id = (%s);''',(tournament,))
@@ -175,6 +173,38 @@ def reportMatch(tournament_id, winner, loser_if_no_bye, tie=False):
 # AND match_id=1;
 # get omw: select wins from standings where player_id=2;
 
+def opponents(tournament, player):
+    """Returns a list of the players who have played player in tournament.
+    Args:
+      tournament:  the tournament id
+      player:  the player whose opponents should be returned
+      
+    Returns:
+      A list of ids of the opponents of player
+        id: the player's unique id (assigned by the database)
+    """
+    matches = opponents = []
+    conn = connect()
+    c = conn.cursor() 
+    c.execute('''
+        SELECT matches.match_id
+        FROM match_results LEFT JOIN matches
+        ON matches.match_id = match_results.match_id
+        WHERE tournament_id = (%s) and player_id = (%s)
+        GROUP BY matches.match_id; ''',(tournament, player))
+    matches = c.fetchall();
+    for match in matches:
+        c.execute('''
+            SELECT player_id
+            FROM match_results 
+            WHERE match_id = (%s) and player_id != (%s)
+            GROUP BY player_id; ''',(match, player))
+        opponents.extend(c.fetchall())
+    print 'for player_id ', player
+    print 'opponents were ', opponents
+    conn.close()
+    return opponents 
+
 def whoHadABye(tournament):
     """Returns a list of the players who had a bye.
     Args:
@@ -190,7 +220,7 @@ def whoHadABye(tournament):
     wins if needed.  Byes are not currently counted as 
     wins for standings or as matches played.
     """
-    byes = ()
+    byes = []
     conn = connect()
     c = conn.cursor() 
     c.execute('''
@@ -247,7 +277,7 @@ def swissPairings(tournament):
             while bye_id < 0:
                 if ((standings[player][0],) in byes):
                     player -= 1
-                    # condition below should never be reached rounds < players
+                    # condition below should never be reached as rounds < players
                     if player == -1: bye_id = standings[0][0];
                 else:
                     bye_id = standings[player][0]
@@ -256,10 +286,36 @@ def swissPairings(tournament):
                     # remove this player from the standings tuple
                     standings = tuple(x for x in standings if x[0] != bye_id)
     # standing will now have an even number of players
-    # DEBUG print "Swiss Pair Standings after bye removal:"
-    # DEBUG print standings
+    print "Swiss Pair Standings after bye removal:"
+    print standings
+    # step through the odd # elements(1st, 3rd) of standings to find highest rank partner
+    # they have not yet played & place them in the next even position & pair them   
+    # FIX: algorithm isn't correct as I can't assume last pair will not have played
+    # possible check on last pair and if they've played search for a pair to swap? or
+    # do I need something more complex?        
     for i in range(0, num_of_players - 1, 2):
-    # use append since the list is empty & you can't write to an empty element
+        played = opponents(tournament, standings[i][0])
+        print "played should be same as opponents" , played
+        match = True
+        j = i + 1
+        while match and j < num_of_players:
+            if (standings[j][0],) not in played:
+                # found the highest player not played, adjust the tuple & pair
+                print "i & j are: ", i, j
+                print "standings[j][0]: ", standings[j][0]
+                print "slices"
+                print standings[:i+1]
+                print standings[j:j+1]
+                print standings[i+1:j]
+                print standings[j+1:]
+                match = False
+                standings = (standings[:i+1] + standings[j:j+1] + 
+                    standings[i+1:j] + standings[j+1:])
+                print "Pairing these 2 elements: ", i, j
+                print "Swiss Pair Standings after a pairing:"
+                print standings
+            j += 1
+        # use append since the list is empty & you can't write to an empty element
         pairs.append((standings[i][0], standings[i][1],
                     standings[i+1][0], standings[i+1][1]))
         

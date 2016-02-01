@@ -196,13 +196,12 @@ def testOddPlayers():
     for (i, n, w, m) in standings:
         if i in (id1,) and (w != 3 and m != 3):
             raise ValueError("The top player should have 3 wins & matches recorded.")
-        elif i in (id2,) and w != 2 and m != 3:
-            raise ValueError("The third player should have had a bye & a win")
-        elif i in (id3,) and w != 1 and m != 2:
-            raise ValueError("The third player should have had a bye & a win")
-        elif i in (id4, id5) and w != 0 and m != 2:
-            raise ValueError("The lowest 2 players should have had byes & 0 wins")
+        elif i in (id2,) and w != 3 and m != 3:
+            raise ValueError("The other 3 players should have had byes & 0-2 wins")
+        elif i in (id3, id4, id5) and w != 3 and m != 2:
+            raise ValueError("The other 3 players should have had byes & 0-2 wins")
     print "9. With an odd # of players 3 get byes & others have updated standings."
+    opponents(tournament, pid1)
 
 
 if __name__ == '__main__':
