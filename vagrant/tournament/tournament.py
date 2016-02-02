@@ -6,6 +6,7 @@
 import psycopg2
 # bleach is an input sanitization library by Mozilla
 import bleach
+from mwmatching import maxWeightMatching
 
 
 def connect():
@@ -235,6 +236,24 @@ def whoHadABye(tournament):
     conn.close()
     return byes  
 
+def weights(standings, tournament):
+    """"Returns a symmetric edge weight matrix of player matchups for tournament.
+    """
+    edges = []
+    num_of_players = len(standings)
+    for i in range(num_of_players):
+        played = opponents(tournament, standings[i][0])
+        # OPT: since this is a symmetric matrix I should be able
+        # to optimize and only do half the matrix then mirror
+        for j in range(num_of_players):
+            if (standings[j][0],) in played:
+                edges.append([i, j, 10000])
+            elif i != j:
+                win_diff = abs(standings[i][2] - standings[j][2])
+                rank_diff = abs(i - j)
+                edges.append([i, j, win_diff * 10 + rank_diff])
+    return edges
+            
  
 def swissPairings(tournament):
     """Returns a list of pairs of players for the next round of a match.
@@ -292,7 +311,27 @@ def swissPairings(tournament):
     # they have not yet played & place them in the next even position & pair them   
     # FIX: algorithm isn't correct as I can't assume last pair will not have played
     # possible check on last pair and if they've played search for a pair to swap? or
-    # do I need something more complex?        
+    # do I need something more complex?
+    """ Minimum weight maximum matching algorithm and modifications from
+        http://healthyalgorithms.com/2009/03/23/aco-in-python-minimum-weight-perfect-matchings-aka-matching-algorithms-and-reproductive-health-part-4/
+    """        
+    edges = weights(standings, tournament)
+    print "The edges are: "
+    print edges 
+    neg_edges = [(i, j, -wt) for i, j, wt in edges]
+    assignments = maxWeightMatching(neg_edges, maxcardinality=True)
+    print "Assignments from MWMM are: "
+    print assignments
+    for i in range(len(assignments)):
+        player_2 = assignments[i]
+        print "i is ", i
+        print "player_2 is ", player_2
+        # skip 2nd assignment element in the edge node pair
+        if player_2 > i:
+            pairs.append((standings[i][0], standings[i][1],
+                    standings[player_2][0], standings[player_2][1]))
+        
+    """ OLD CODE
     for i in range(0, num_of_players - 1, 2):
         played = opponents(tournament, standings[i][0])
         print "played should be same as opponents" , played
@@ -318,6 +357,7 @@ def swissPairings(tournament):
         # use append since the list is empty & you can't write to an empty element
         pairs.append((standings[i][0], standings[i][1],
                     standings[i+1][0], standings[i+1][1]))
+    """
         
     return pairs
      

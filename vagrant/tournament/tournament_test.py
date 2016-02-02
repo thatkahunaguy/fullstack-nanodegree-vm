@@ -157,6 +157,34 @@ def testPairings():
             "After one match, players with one win should be paired.")
     print "8. After one match, players with one win are paired."
 
+def testRepeat(played, pid1, pid2, pid3, pid4):
+    if pid1 in played:
+        played[pid1].append(pid2)
+    else:
+        played[pid1] = [pid2,]
+    if len(played[pid1]) != len(set(played[pid1])):
+        raise ValueError("player (%s) has played duplicate players", (pid1,))
+    if pid2 in played:
+        played[pid2].append(pid1)
+    else:
+        played[pid2] = [pid1,]
+    if len(played[pid2]) != len(set(played[pid2])):
+        raise ValueError("player (%s) has played duplicate players", (pid2,))
+    if pid3 in played:
+        played[pid3].append(pid4)
+    else:
+        played[pid3] = [pid4,]
+    if len(played[pid3]) != len(set(played[pid3])):
+        raise ValueError("player (%s) has played duplicate players", (pid3,))
+    if pid4 in played:
+        played[pid4].append(pid3)
+    else:
+        played[pid4] = [pid3,]
+    if len(played[pid4]) != len(set(played[pid4])):
+        raise ValueError("player (%s) has played duplicate players", (pid4,))
+    print "*****played*****: ", played
+    return played
+
 def testOddPlayers():
     deleteMatches()
     deletePlayers()
@@ -179,27 +207,31 @@ def testOddPlayers():
     registerTournamentPlayer(tournament, id5)
     # MODIFIED TO ADD TOURNAMENT TO reportMatch
     pairings = swissPairings(tournament)
+    played = {}
     [(pid1, pname1, pid2, pname2), (pid3, pname3, pid4, pname4)] = pairings    
     reportMatch(tournament, pid1, pid2)
     reportMatch(tournament, pid3, pid4)
+    testRepeat(played, pid1, pid2, pid3, pid4)
     pairings = swissPairings(tournament)
     [(pid1, pname1, pid2, pname2), (pid3, pname3, pid4, pname4)] = pairings    
     reportMatch(tournament, pid1, pid2)
     reportMatch(tournament, pid3, pid4)
+    testRepeat(played, pid1, pid2, pid3, pid4)
     pairings = swissPairings(tournament)
     [(pid1, pname1, pid2, pnam2), (pid3, pname3, pid4, pname4)] = pairings    
     reportMatch(tournament, pid1, pid2)
     reportMatch(tournament, pid3, pid4)
+    testRepeat(played, pid1, pid2, pid3, pid4)
     # END MOD
     standings = playerStandings(tournament)
     [id1, id2, id3, id4, id5] = [row[0] for row in standings]
     for (i, n, w, m) in standings:
         if i in (id1,) and (w != 3 and m != 3):
             raise ValueError("The top player should have 3 wins & matches recorded.")
-        elif i in (id2,) and w != 3 and m != 3:
-            raise ValueError("The other 3 players should have had byes & 0-2 wins")
-        elif i in (id3, id4, id5) and w != 3 and m != 2:
-            raise ValueError("The other 3 players should have had byes & 0-2 wins")
+        elif i in (id2,) and ((w != 1 and m != 2) and (w != 2 and m!= 3)):
+            raise ValueError("The 2nd player should have 1 less win than matches")
+        elif i in (id3, id4, id5) and not((w == 1 and m == 3) or (m == 2)):
+            raise ValueError("The other 3 players should have 1 win & no bye or byes")
     print "9. With an odd # of players 3 get byes & others have updated standings."
     opponents(tournament, pid1)
 
