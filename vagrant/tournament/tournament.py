@@ -6,6 +6,8 @@
 import psycopg2
 # bleach is an input sanitization library by Mozilla
 import bleach
+# Maximum weight matching algorithm code used is by Joris van Rantwijk:
+#    http://jorisvr.nl/maximummatching.html 
 from mwmatching import maxWeightMatching
 
 
@@ -15,7 +17,7 @@ def connect():
 
 
 def deleteMatches():
-    """Remove all the match records from the database."""
+    """Remove all the match & tournament records from the database."""
     conn = connect()
     c = conn.cursor()
     c.execute("DELETE FROM match_results;")
@@ -23,6 +25,15 @@ def deleteMatches():
     conn.commit() 
     conn.close()
 
+def deleteTournaments():
+    """Remove all the tournament records from the database.
+       You must run deleteMatches() first to delete match records. """
+    conn = connect()
+    c = conn.cursor()
+    c.execute("DELETE FROM tournament_registrations;")
+    c.execute("DELETE FROM tournaments;")
+    conn.commit() 
+    conn.close()
 
 def deletePlayers():
     """Remove all the player records from the database."""
@@ -128,7 +139,9 @@ def playerStandings(tournament = 0):
         c.execute('''SELECT player, player_name, wins, matches_played FROM standings 
             WHERE tournament_id = (%s);''',(tournament,))
     else:
-        c.execute("SELECT player, player_name, wins, matches_played FROM standings;")
+        c.execute('''SELECT player, player_name, sum(wins) as wins, sum(matches_played)
+            FROM standings GROUP BY player, player_name ORDER BY wins DESC;''')
+#         c.execute("SELECT player, player_name, wins, matches_played FROM standings;")
     standings = c.fetchall(); 
     conn.close()
     return standings
@@ -173,6 +186,26 @@ def reportMatch(tournament_id, winner, loser_if_no_bye, tie=False):
 # get opponents played: select player_id from match_results where player_id<>1
 # AND match_id=1;
 # get omw: select wins from standings where player_id=2;
+def opponentMatchWins(tournament, opponents):
+    """Returns a list of the players who have played player in tournament.
+    Args:
+      tournament:  the tournament id
+      opponents:   a list of ids of the opponents of player
+      
+    Returns:
+      The sum total of wins of opponents in tournament
+    """
+    conn = connect()
+    c = conn.cursor()
+    wins = 0 
+    for opponent in opponents:
+        c.execute('''
+            SELECT wins
+            FROM standings
+            WHERE player_id = (%s)''',(opponent,))
+        wins += c.fetchone()[0];
+    print "OMW for player ", 
+    return wins
 
 def opponents(tournament, player):
     """Returns a list of the players who have played player in tournament.
@@ -186,7 +219,13 @@ def opponents(tournament, player):
     """
     matches = opponents = []
     conn = connect()
-    c = conn.cursor() 
+    c = conn.cursor()
+    c.execute('''
+        SELECT opponent
+        FROM opponents
+        WHERE tournament_id = (%s) and player = (%s); ''',(tournament, player))
+    opponents = c.fetchall(); 
+    """
     c.execute('''
         SELECT matches.match_id
         FROM match_results LEFT JOIN matches
@@ -201,6 +240,7 @@ def opponents(tournament, player):
             WHERE match_id = (%s) and player_id != (%s)
             GROUP BY player_id; ''',(match, player))
         opponents.extend(c.fetchall())
+    """
     print 'for player_id ', player
     print 'opponents were ', opponents
     conn.close()
@@ -272,6 +312,14 @@ def swissPairings(tournament):
         name1: the first player's name
         id2: the second player's unique id
         name2: the second player's name
+        
+    Algorithm to pair and ensure no rematches was modeled on Leaguevine:
+    https://www.leaguevine.com/blog/18/swiss-tournament-scheduling-leaguevines-new-algorithm/
+    with modifications to weighting to make it a function of win & rank difference.
+    The minimum weight maximum match algorithm was implemented based on work in:
+    http://healthyalgorithms.com/2009/03/23/aco-in-python-minimum-weight-perfect-matchings-aka-matching-algorithms-and-reproductive-health-part-4/
+    And the actual maximum weight matching algorithm code used is by Joris van Rantwijk:
+    http://jorisvr.nl/maximummatching.html 
     """
     pairs = []
     conn = connect()
@@ -331,33 +379,6 @@ def swissPairings(tournament):
             pairs.append((standings[i][0], standings[i][1],
                     standings[player_2][0], standings[player_2][1]))
         
-    """ OLD CODE
-    for i in range(0, num_of_players - 1, 2):
-        played = opponents(tournament, standings[i][0])
-        print "played should be same as opponents" , played
-        match = True
-        j = i + 1
-        while match and j < num_of_players:
-            if (standings[j][0],) not in played:
-                # found the highest player not played, adjust the tuple & pair
-                print "i & j are: ", i, j
-                print "standings[j][0]: ", standings[j][0]
-                print "slices"
-                print standings[:i+1]
-                print standings[j:j+1]
-                print standings[i+1:j]
-                print standings[j+1:]
-                match = False
-                standings = (standings[:i+1] + standings[j:j+1] + 
-                    standings[i+1:j] + standings[j+1:])
-                print "Pairing these 2 elements: ", i, j
-                print "Swiss Pair Standings after a pairing:"
-                print standings
-            j += 1
-        # use append since the list is empty & you can't write to an empty element
-        pairs.append((standings[i][0], standings[i][1],
-                    standings[i+1][0], standings[i+1][1]))
-    """
         
     return pairs
      

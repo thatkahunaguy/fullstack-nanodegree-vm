@@ -20,12 +20,12 @@ def testCount():
 # added a test of actual count = 2 players via populate.py
     populate();
     c = countPlayers()
-    if c == '2':
+    if c == '3':
         raise TypeError(
             "countPlayers() should return numeric two, not string '2'.")
-    if c != 2:
-        raise ValueError("Initially, countPlayers should return two.")
-    print "3a. Initially, countPlayers() returns two."
+    if c != 3:
+        raise ValueError("Initially, countPlayers should return three.")
+    print "3a. Initially, countPlayers() returns three."
     deleteMatches()
     deletePlayers()
     c = countPlayers()
@@ -162,6 +162,7 @@ def testRepeat(played, pid1, pid2, pid3, pid4):
         played[pid1].append(pid2)
     else:
         played[pid1] = [pid2,]
+    # check for duplicate opponents
     if len(played[pid1]) != len(set(played[pid1])):
         raise ValueError("player (%s) has played duplicate players", (pid1,))
     if pid2 in played:
@@ -211,6 +212,7 @@ def testOddPlayers():
     [(pid1, pname1, pid2, pname2), (pid3, pname3, pid4, pname4)] = pairings    
     reportMatch(tournament, pid1, pid2)
     reportMatch(tournament, pid3, pid4)
+    # check to see if there are any repeated opponents
     testRepeat(played, pid1, pid2, pid3, pid4)
     pairings = swissPairings(tournament)
     [(pid1, pname1, pid2, pname2), (pid3, pname3, pid4, pname4)] = pairings    
@@ -233,8 +235,63 @@ def testOddPlayers():
         elif i in (id3, id4, id5) and not((w == 1 and m == 3) or (m == 2)):
             raise ValueError("The other 3 players should have 1 win & no bye or byes")
     print "9. With an odd # of players 3 get byes & others have updated standings."
-    opponents(tournament, pid1)
+    
 
+def testMultTournament():
+# need to implement test for multiple tournament
+# populate with 3 players split across 2 tournaments
+    deleteMatches()
+    deleteTournaments()
+    deletePlayers()
+    populate();
+    standings = playerStandings()
+    [id1, id2, id3] = [row[0] for row in standings]
+    print "ids: ", id1, id2, id3
+    # [t1, t2] = set([row[0] for row in standings])
+    print "set: ", set([row[0] for row in standings])
+    print "standings: "
+    print standings
+    # verify there are 2 tournaments
+    conn = connect()
+    c = conn.cursor()
+    c.execute("SELECT * FROM tournaments")
+    tourneys = c.fetchall() 
+    if len(tourneys) != 2:
+        raise ValueError("There should be 2 tournaments")    
+    # verify there are 2 players registered for each tournament
+    [t1, t2] = [row[0] for row in tourneys]
+    c.execute('''SELECT player_id FROM tournament_registrations 
+        WHERE tournament_id = (%s)''', (t1,))
+    players = c.fetchall()
+    if len(players) != 2:
+        print "players: ", players
+        raise ValueError("There should be 2 players")
+    c.execute('''SELECT player_id FROM tournament_registrations 
+        WHERE tournament_id = (%s)''', (t2,))
+    players = c.fetchall()
+    if len(players) != 2:
+        raise ValueError("There should be 2 players")
+    conn.close()
+    # verify that results are correct for all tournament and specific
+    # tournament standings
+    standings = playerStandings(t1)
+    [id1, id2] = [row[0] for row in standings]
+    for (i, n, w, m) in standings:
+        if i in (id1,) and (w != 1 and m != 1):
+            raise ValueError("The top player should have 1 win & match recorded.")
+        elif i in (id2,) and (w != 0 and m != 1) :
+            raise ValueError("The 2nd player should have 0 wins & 1 match")
+    standings = playerStandings(t2)
+    [id1, id2] = [row[0] for row in standings]
+    for (i, n, w, m) in standings:
+        if i in (id1,) and (w != 1 and m != 1):
+            raise ValueError("The top player should have 1 win & match recorded.")
+        elif i in (id2,) and (w != 0 and m != 1) :
+            raise ValueError("The 2nd player should have 0 wins & 1 match")       
+    print "10. With 2 tournaments players have the correct standings."
+    
+    
+    
 
 if __name__ == '__main__':
     testDeleteMatches()
@@ -246,6 +303,8 @@ if __name__ == '__main__':
     testReportMatches()
     testPairings()
     testOddPlayers()
+    # add rematch test to above?
+    testMultTournament()
     print "Success!  All tests pass!"
 
 
