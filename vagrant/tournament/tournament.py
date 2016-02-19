@@ -174,12 +174,12 @@ def reportMatch(tournament_id, winner, loser_if_no_bye, tie=False):
         outcome1 = "win"
         outcome2 = "loss"
     c.execute('''
-        INSERT INTO match_results (match_id, player_id, match_result )
-            values (%s, %s, %s);''',(match, winner, outcome1))
+        INSERT INTO match_results (match_id, player_id, tourn_id, match_result )
+            values (%s, %s, %s, %s);''',(match, winner, tournament_id, outcome1))
     if loser_if_no_bye:
         c.execute('''
-            INSERT INTO match_results (match_id, player_id, match_result )
-                values (%s, %s, %s);''',(match, loser_if_no_bye, outcome2))
+            INSERT INTO match_results (match_id, player_id, tourn_id, match_result )
+                values (%s, %s, %s, %s);''',(match, loser_if_no_bye, tournament_id, outcome2))
     conn.commit() 
     conn.close()
 

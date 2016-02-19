@@ -93,6 +93,7 @@ def testStandingsBeforeMatches():
 def testReportMatches():
     deleteMatches()
     deletePlayers()
+    deleteTournaments()
     # MODIFIED TO CREATE A TOURNAMENT
     tournament = createTournament("US Open")
     # END MOD
@@ -126,6 +127,7 @@ def testReportMatches():
 def testPairings():
     deleteMatches()
     deletePlayers()
+    deleteTournaments()
     # MODIFIED TO CREATE A TOURNAMENT
     tournament = createTournament("US Open")
     # END MOD
@@ -188,6 +190,7 @@ def testRepeat(played, pid1, pid2, pid3, pid4):
 def testOddPlayers():
     deleteMatches()
     deletePlayers()
+    deleteTournaments()
     # MODIFIED TO CREATE A TOURNAMENT
     tournament = createTournament("US Open")
     # END MOD
@@ -296,6 +299,7 @@ def testMultTournament():
 def testTie():
     deleteMatches()
     deletePlayers()
+    deleteTournaments()
     # MODIFIED TO CREATE A TOURNAMENT
     tournament = createTournament("US Open")
     # END MOD

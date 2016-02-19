@@ -19,15 +19,16 @@ CREATE TYPE outcome AS ENUM ('win', 'loss', 'tie', 'bye');
 
 CREATE TABLE players (
     player_id serial PRIMARY KEY, 
-    player_name text);
+    player_name text NOT NULL);
 
 CREATE TABLE tournaments (
     tournament_id serial PRIMARY KEY, 
-    tournament_name text);
+    tournament_name text NOT NULL);
     
 CREATE TABLE tournament_registrations (
     tournament_id integer REFERENCES tournaments, 
-    player_id integer REFERENCES players);
+    player_id integer REFERENCES players,
+    PRIMARY KEY (tournament_id, player_id));
     
 CREATE TABLE matches (
      match_id serial PRIMARY KEY,
@@ -39,7 +40,12 @@ CREATE TABLE matches (
 CREATE TABLE match_results (
      match_id integer REFERENCES matches,
      player_id integer REFERENCES players,
-     match_result outcome);   
+     -- CHORE: tourn_id added only for referential integrity, is this a design flaw?
+     tourn_id integer REFERENCES tournaments,
+     match_result outcome,
+     PRIMARY KEY (match_id, player_id),
+     FOREIGN KEY (tourn_id, player_id) REFERENCES
+         tournament_registrations (tournament_id, player_id));   
 
 -- this is the specific view requested by the assignment, wins only
 -- byes DO NOT provide a win

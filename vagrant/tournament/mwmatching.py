@@ -1,5 +1,8 @@
 """Weighted maximum matching in general graphs.
 
+    This maximum weight matching algorithm code is by Joris van Rantwijk:
+    http://jorisvr.nl/maximummatching.html 
+
 The algorithm is taken from "Efficient Algorithms for Finding Maximum
 Matching in Graphs" by Zvi Galil, ACM Computing Surveys, 1986.
 It is based on the "blossom" method for finding augmenting paths and
