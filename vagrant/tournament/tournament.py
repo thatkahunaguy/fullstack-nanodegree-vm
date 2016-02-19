@@ -50,8 +50,6 @@ def countPlayers():
     c = conn.cursor()
     c.execute("SELECT count(player_id) FROM players;")
     count = c.fetchone()[0]
-    # debug line to delete
-    print "Player count is: {}".format(count)
     conn.close()
     return count
 
@@ -208,14 +206,6 @@ def opponentMatchWins(tournament, player):
         FROM opponents
         WHERE tournament_id = (%s) and player_1 = (%s); ''',(tournament, player))
     wins = c.fetchone()[0];
-#     wins = 0 
-#     for opponent in opponents:
-#         c.execute('''
-#             SELECT wins
-#             FROM standings
-#             WHERE player_id = (%s)''',(opponent,))
-#         wins += c.fetchone()[0];
-    print "OMW for player ", 
     return wins
 
 def opponents(tournament, player):
@@ -236,8 +226,6 @@ def opponents(tournament, player):
         FROM opponents
         WHERE tournament_id = (%s) and player = (%s); ''',(tournament, player))
     opponents = c.fetchall(); 
-    print 'for player_id ', player
-    print 'opponents were ', opponents
     conn.close()
     return opponents 
 
@@ -266,8 +254,6 @@ def whoHadABye(tournament):
         WHERE tournament_id = (%s) and match_result = 'bye'
         GROUP BY player_id; ''',(tournament,))
     byes = c.fetchall();
-    # DEBUG print 'These folks had a bye ', byes
-    # DEBUG print 'Length of byes is ',  len(byes)
     conn.close()
     return byes  
 
@@ -329,7 +315,6 @@ def swissPairings(tournament):
         if len(byes) == 0:
             # assign the last player if no one has a bye yet
             bye_id = standings[player][0]
-            # DEBUG print "Initial bye assigned to: ", bye_id
             reportMatch(tournament, bye_id, 0)
             # remove this player from the standings tuple
             standings = tuple(x for x in standings if x[0] != bye_id)
@@ -348,33 +333,22 @@ def swissPairings(tournament):
                     # remove this player from the standings tuple
                     standings = tuple(x for x in standings if x[0] != bye_id)
     # standing will now have an even number of players
-    print "Swiss Pair Standings after bye removal:"
-    print standings
-    # step through the odd # elements(1st, 3rd) of standings to find highest rank partner
-    # they have not yet played & place them in the next even position & pair them   
-    # FIX: algorithm isn't correct as I can't assume last pair will not have played
-    # possible check on last pair and if they've played search for a pair to swap? or
-    # do I need something more complex?
+    # use minimum weight maximum match graph theory algorithm
+    # to assign Swiss Pairings and avoid rematches(due to high rematch weight)
     """ Minimum weight maximum matching algorithm and modifications from
         http://healthyalgorithms.com/2009/03/23/aco-in-python-minimum-weight-perfect-matchings-aka-matching-algorithms-and-reproductive-health-part-4/
     """        
-    edges = weights(standings, tournament)
-    print "The edges are: "
-    print edges 
+    edges = weights(standings, tournament) 
+    # neg weights in max weight match algorithm gives min weights
     neg_edges = [(i, j, -wt) for i, j, wt in edges]
     assignments = maxWeightMatching(neg_edges, maxcardinality=True)
-    print "Assignments from MWMM are: "
-    print assignments
     for i in range(len(assignments)):
         player_2 = assignments[i]
-        print "i is ", i
-        print "player_2 is ", player_2
-        # skip 2nd assignment element in the edge node pair
+        # skip 2nd assignment element in the edge node pair - since all pair
+        # elements are repeated the lower index element has already been assigned
         if player_2 > i:
             pairs.append((standings[i][0], standings[i][1],
-                    standings[player_2][0], standings[player_2][1]))
-        
-        
+                    standings[player_2][0], standings[player_2][1]))      
     return pairs
      
     conn.close()

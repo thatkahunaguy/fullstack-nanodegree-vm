@@ -183,7 +183,6 @@ def testRepeat(played, pid1, pid2, pid3, pid4):
         played[pid4] = [pid3,]
     if len(played[pid4]) != len(set(played[pid4])):
         raise ValueError("player (%s) has played duplicate players", (pid4,))
-    print "*****played*****: ", played
     return played
 
 def testOddPlayers():
@@ -245,11 +244,6 @@ def testMultTournament():
     populate();
     standings = playerStandings()
     [id1, id2, id3] = [row[0] for row in standings]
-    print "ids: ", id1, id2, id3
-    # [t1, t2] = set([row[0] for row in standings])
-    print "set: ", set([row[0] for row in standings])
-    print "standings: "
-    print standings
     # verify there are 2 tournaments
     conn = connect()
     c = conn.cursor()
@@ -298,8 +292,6 @@ def testMultTournament():
         elif i in (nid4,) and (w != 1 and n != "Fifth Player") :
             raise ValueError("Fifth Player should have 1 win but be in last place")
     print "11. With 4 players with 1 win each the players have the correct OMW standings."       
-    standings = playerStandings()
-    print standings
 
 def testTie():
     deleteMatches()
@@ -345,6 +337,8 @@ def testTie():
     
 
 if __name__ == '__main__':
+    print "Note: tests have been modified to accomodate ties, odd players,"
+    print "      multiple tournaments, no repeats, no rematches, & OMW ranking"
     testDeleteMatches()
     testDelete()
     testCount()
@@ -357,9 +351,6 @@ if __name__ == '__main__':
     # add rematch test to above?
     testMultTournament()
     testTie()
-    
-    # add another player to one of the tournaments & have him beat the #1 player
-    # then check that he is at top of stats based on OMW
     print "Success!  All tests pass!"
 
 

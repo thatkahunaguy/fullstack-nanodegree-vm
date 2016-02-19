@@ -14,13 +14,13 @@ CREATE DATABASE tournament;
 \c tournament;
 
 -- create an enumerated type for the match outcomes
+-- could add defaults in future as an example
 CREATE TYPE outcome AS ENUM ('win', 'loss', 'tie', 'bye');
 
 CREATE TABLE players (
     player_id serial PRIMARY KEY, 
     player_name text);
 
--- Initial table design to add additional tournaments
 CREATE TABLE tournaments (
     tournament_id serial PRIMARY KEY, 
     tournament_name text);
@@ -34,16 +34,17 @@ CREATE TABLE matches (
      tournament_id integer REFERENCES tournaments,
      round integer);
  
--- probably need to update player_id to reference tournament registrations
+-- CHORE: probably need to update player_id to reference tournament registrations
 -- to validate it is a registered player (how to access correct tournament?)
 CREATE TABLE match_results (
      match_id integer REFERENCES matches,
      player_id integer REFERENCES players,
      match_result outcome);   
 
-
 -- this is the specific view requested by the assignment, wins only
--- (may need matches played to delete byes & defaults)
+-- byes DO NOT provide a win
+-- byes DO NOT count as a match played
+-- The above are easy to modify or could be assigned settings variables if desired
 CREATE VIEW standings AS
     SELECT
         matches.tournament_id as tournament_id,
@@ -61,28 +62,19 @@ CREATE VIEW standings AS
     ORDER BY tournament_id, wins DESC;
 
 
-
--- this view is a list of all match opponents - is this more efficient than storing
--- the opponent in the matches table??
--- BUG: need to add the tournament id here to show which tournament they played in
--- and then ensure it is factored into OMW wins count     
+-- this view is a list of all match opponents - should assess whether the single
+-- player entry match results table was the right design vs entering player & opponent
+-- which wouldn't require this view.  Originally done single line so I could accomodate
+-- more than just byes in the future...for example, defaults, injury retirements etc.
 CREATE VIEW opponents AS
     SELECT matches.tournament_id, a.player_id as player, b.player_id as opponent
     FROM match_results a
         INNER JOIN match_results b
             ON (a.match_id = b.match_id) and (a.player_id != b.player_id)
         LEFT JOIN matches
-           ON a.match_id = matches.match_id;
-    
--- CREATE VIEW opponents AS
---     SELECT a.player_id as player_1, b.player_id as player_2
---     FROM match_results a, match_results b
---     WHERE (a.match_id = b.match_id) and (a.player_id != b.player_id);
-
+           ON a.match_id = matches.match_id;    
 
 -- opponent match wins
--- CHORE: need to update python to use these 2 views and ensure
---        the standings & match_results views incorporate the tournament
 CREATE VIEW opponent_match_wins AS
     SELECT opponents.tournament_id, opponents.player as player_1, sum(wins) as OMW
     FROM opponents LEFT JOIN standings
@@ -91,6 +83,9 @@ CREATE VIEW opponent_match_wins AS
     GROUP BY opponents.tournament_id, player_1;
     
 -- this view includes losses and ties (may need matches played to delete byes & defaults)
+-- it's not currently used but would be the view used if losses, ties, & byes needed to
+-- be passed.  The assignment specifies that only wins & matches are to be used and I
+-- didn't feel the need to update queries to use this view...time to move on.
 CREATE VIEW match_record AS
     SELECT
         matches.tournament_id as tournament_id,
@@ -109,8 +104,6 @@ CREATE VIEW match_record AS
     GROUP BY matches.tournament_id, player
     ORDER BY matches.tournament_id, wins DESC;
 
--- CHORE: this view works, update to give what I want or just use this query
--- in tournament.py
 CREATE VIEW omw_record AS
     SELECT m.tournament_id, m.player, m.player_name, m.wins, m.matches_played, o.omw
     FROM standings AS m
