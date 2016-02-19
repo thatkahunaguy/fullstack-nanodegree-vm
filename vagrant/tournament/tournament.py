@@ -135,15 +135,19 @@ def playerStandings(tournament = 0):
     standings = ()
     conn = connect()
     c = conn.cursor()
+    # QUESTION: do I need to explicitly provide ORDER BY or is it ok to to assume
+    # order specified in the view will be preserved as I did below?
     if tournament:
-        c.execute('''SELECT player, player_name, wins, matches_played FROM standings 
+        c.execute('''SELECT player, player_name, wins, matches_played FROM omw_record 
             WHERE tournament_id = (%s);''',(tournament,))
     else:
+    # show the standings across all tournaments
         c.execute('''SELECT player, player_name, sum(wins) as wins, sum(matches_played)
-            FROM standings GROUP BY player, player_name ORDER BY wins DESC;''')
-#         c.execute("SELECT player, player_name, wins, matches_played FROM standings;")
+            FROM omw_record GROUP BY player, player_name ORDER BY wins DESC,
+            sum(omw) DESC;''')
     standings = c.fetchall(); 
     conn.close()
+    # modify standings 
     return standings
 
 def reportMatch(tournament_id, winner, loser_if_no_bye, tie=False):
@@ -186,24 +190,31 @@ def reportMatch(tournament_id, winner, loser_if_no_bye, tie=False):
 # get opponents played: select player_id from match_results where player_id<>1
 # AND match_id=1;
 # get omw: select wins from standings where player_id=2;
-def opponentMatchWins(tournament, opponents):
-    """Returns a list of the players who have played player in tournament.
+# CHORE: delete after replaced with schema update to view
+def opponentMatchWins(tournament, player):
+    """Returns the number of wins of a player's opponents in a tournament
     Args:
       tournament:  the tournament id
-      opponents:   a list of ids of the opponents of player
+      player: the player id of the player 
+      PRIOR - opponents:   a list of ids of the opponents of player
       
     Returns:
       The sum total of wins of opponents in tournament
     """
     conn = connect()
     c = conn.cursor()
-    wins = 0 
-    for opponent in opponents:
-        c.execute('''
-            SELECT wins
-            FROM standings
-            WHERE player_id = (%s)''',(opponent,))
-        wins += c.fetchone()[0];
+    c.execute('''
+        SELECT OMW
+        FROM opponents
+        WHERE tournament_id = (%s) and player_1 = (%s); ''',(tournament, player))
+    wins = c.fetchone()[0];
+#     wins = 0 
+#     for opponent in opponents:
+#         c.execute('''
+#             SELECT wins
+#             FROM standings
+#             WHERE player_id = (%s)''',(opponent,))
+#         wins += c.fetchone()[0];
     print "OMW for player ", 
     return wins
 
@@ -225,22 +236,6 @@ def opponents(tournament, player):
         FROM opponents
         WHERE tournament_id = (%s) and player = (%s); ''',(tournament, player))
     opponents = c.fetchall(); 
-    """
-    c.execute('''
-        SELECT matches.match_id
-        FROM match_results LEFT JOIN matches
-        ON matches.match_id = match_results.match_id
-        WHERE tournament_id = (%s) and player_id = (%s)
-        GROUP BY matches.match_id; ''',(tournament, player))
-    matches = c.fetchall();
-    for match in matches:
-        c.execute('''
-            SELECT player_id
-            FROM match_results 
-            WHERE match_id = (%s) and player_id != (%s)
-            GROUP BY player_id; ''',(match, player))
-        opponents.extend(c.fetchall())
-    """
     print 'for player_id ', player
     print 'opponents were ', opponents
     conn.close()

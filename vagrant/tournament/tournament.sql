@@ -41,6 +41,7 @@ CREATE TABLE match_results (
      player_id integer REFERENCES players,
      match_result outcome);   
 
+
 -- this is the specific view requested by the assignment, wins only
 -- (may need matches played to delete byes & defaults)
 CREATE VIEW standings AS
@@ -59,24 +60,7 @@ CREATE VIEW standings AS
     GROUP BY tournament_id, player
     ORDER BY tournament_id, wins DESC;
 
--- this view includes losses and ties (may need matches played to delete byes & defaults)
-CREATE VIEW match_record AS
-    SELECT
-        matches.tournament_id as tournament_id,
-        players.player_id as player,
-        count(case when match_results.match_result = 'win' then 1 else NULL end) as wins,
-        count(case when match_results.match_result = 'loss' then 1 else NULL end) as losses,
-        count(case when match_results.match_result = 'tie' then 1 else NULL end) as ties,
-        count(case when match_results.match_result = 'bye' then 1 else NULL end) as byes,
-        count(case when match_results.match_result != 'bye' then 1 else NULL end) 
-            as matches_played
-    FROM players 
-        LEFT JOIN match_results
-            ON players.player_id = match_results.player_id
-        LEFT JOIN matches
-            ON match_results.match_id = matches.match_id
-    GROUP BY tournament_id, player
-    ORDER BY tournament_id, wins DESC;
+
 
 -- this view is a list of all match opponents - is this more efficient than storing
 -- the opponent in the matches table??
@@ -106,5 +90,34 @@ CREATE VIEW opponent_match_wins AS
         and (opponents.tournament_id = standings.tournament_id)
     GROUP BY opponents.tournament_id, player_1;
     
+-- this view includes losses and ties (may need matches played to delete byes & defaults)
+CREATE VIEW match_record AS
+    SELECT
+        matches.tournament_id as tournament_id,
+        players.player_id as player,
+        count(case when match_results.match_result = 'win' then 1 else NULL end) as wins,
+        count(case when match_results.match_result = 'loss' then 1 else NULL end) as losses,
+        count(case when match_results.match_result = 'tie' then 1 else NULL end) as ties,
+        count(case when match_results.match_result = 'bye' then 1 else NULL end) as byes,
+        count(case when match_results.match_result != 'bye' then 1 else NULL end) 
+            as matches_played
+    FROM players 
+        LEFT JOIN match_results
+            ON players.player_id = match_results.player_id
+        LEFT JOIN matches
+            ON match_results.match_id = matches.match_id
+    GROUP BY matches.tournament_id, player
+    ORDER BY matches.tournament_id, wins DESC;
 
+-- CHORE: this view works, update to give what I want or just use this query
+-- in tournament.py
+CREATE VIEW omw_record AS
+    SELECT m.tournament_id, m.player, m.player_name, m.wins, m.matches_played, o.omw
+    FROM standings AS m
+        LEFT JOIN opponent_match_wins AS o
+            ON (m.tournament_id = o.tournament_id)
+                AND (m.player = o.player_1)
+    ORDER BY m.tournament_id, wins DESC, omw DESC;       
+        
+    
         
