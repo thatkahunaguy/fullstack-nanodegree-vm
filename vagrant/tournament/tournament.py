@@ -183,12 +183,6 @@ def reportMatch(tournament_id, winner, loser_if_no_bye, tie=False):
     conn.commit() 
     conn.close()
 
-# for computing opponent match wins(omw) later
-# get matches played: select match_id from match_results where player_id=1;
-# get opponents played: select player_id from match_results where player_id<>1
-# AND match_id=1;
-# get omw: select wins from standings where player_id=2;
-# CHORE: delete after replaced with schema update to view
 def opponentMatchWins(tournament, player):
     """Returns the number of wins of a player's opponents in a tournament
     Args:
@@ -259,6 +253,23 @@ def whoHadABye(tournament):
 
 def weights(standings, tournament):
     """"Returns a symmetric edge weight matrix of player matchups for tournament.
+        Args:
+            standings: 
+            tournament:  the tournament id
+      
+        Returns:
+           A list of edges & weights based on the standings [i, j, weight] where:
+              i, j: index value to players in the standings [0 = first place]
+              w: weight of the edge from player i to player j as defined below
+        
+        Weighting of each edge is:
+            10000(very high) to prevent rematches if players have played
+            f(win differential, rank differential) if they haven't played - this
+                means the lowest weights will go to players who are ranked very
+                closely and with a small win differential.  Win differential is
+                weighted larger as we want to pair players with the same number
+                of wins but different rankings before players with different win
+                numbers.  The precise function used is  10 * win_diff + rank diff 
     """
     edges = []
     num_of_players = len(standings)
@@ -341,6 +352,7 @@ def swissPairings(tournament):
     edges = weights(standings, tournament) 
     # neg weights in max weight match algorithm gives min weights
     neg_edges = [(i, j, -wt) for i, j, wt in edges]
+    # use the graph neg_edges in the max weight algorithm to get assignments
     assignments = maxWeightMatching(neg_edges, maxcardinality=True)
     for i in range(len(assignments)):
         player_2 = assignments[i]
